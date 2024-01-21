@@ -89,6 +89,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn random_candy(asset_server: &Res<AssetServer>) -> Handle<Image> {
-    let candy_num = rand::thread_rng().gen_range(0..=(NUM_CANDY - 1));
+    let candy_num = rand::thread_rng().gen_range(0..=(NUM_CANDY - 1)); // gen_range is inclusive
     asset_server.load(format!("candy{}.png", candy_num))
 }
