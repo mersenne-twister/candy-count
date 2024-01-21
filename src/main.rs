@@ -3,8 +3,11 @@ use bevy::{
     window::{EnabledButtons, WindowMode, WindowResolution},
 };
 use bevy_xpbd_2d::prelude::*;
+use rand::Rng;
 
 mod layers;
+
+const NUM_CANDY: u32 = 10;
 
 fn main() {
     App::new()
@@ -40,7 +43,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             SpriteBundle {
-                texture: asset_server.load("jar.png"),
+                texture: asset_server.load("jar-front.png"),
                 transform: Transform {
                     translation: Vec3::new(0., 5., layers::JAR),
                     ..default()
@@ -55,6 +58,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             // Collider::segment((49., -70.).into(), (49., 50.).into())
         ))
         .with_children(|children| {
+            children.spawn(SpriteBundle {
+                texture: asset_server.load("jar-back.png"),
+                transform: Transform::from_translation((0., 0., -2.).into()),
+                ..default()
+            });
             children.spawn(Collider::segment((-49., 50.).into(), (-49., -70.).into()));
             children.spawn(Collider::segment((-49., -65.).into(), (0., -72.).into()));
             children.spawn(Collider::segment((0., -72.).into(), (49., -65.).into()));
@@ -62,11 +70,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 
     for x in -10..10 {
-        for y in 80..100 {
+        for y in 0..40 {
             commands.spawn((
                 SpriteBundle {
                     texture: random_candy(&asset_server),
-                    transform: Transform::from_translation(Vec3::new(0., 50., layers::MARBLES)),
+                    transform: Transform::from_translation(Vec3::new(
+                        x as f32 * 4.5,
+                        (y as f32 * 4.) + 60.,
+                        layers::MARBLES,
+                    )),
                     ..default()
                 },
                 RigidBody::Dynamic,
@@ -77,5 +89,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn random_candy(asset_server: &Res<AssetServer>) -> Handle<Image> {
-    asset_server.load("candy1.png")
+    let candy_num = rand::thread_rng().gen_range(0..=(NUM_CANDY - 1));
+    asset_server.load(format!("candy{}.png", candy_num))
 }
