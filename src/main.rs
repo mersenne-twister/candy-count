@@ -88,6 +88,30 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
 }
 
+fn spawn_candy(amount: u32, commands: &Commands, asset_server: &Res<AssetServer>) {
+    for y in 0..(20/amount) { // integer division intended
+        for x in -10..(
+            if (20/amount == 0) {
+                ((amount - (20 % amount)) - 10)
+            }   
+        ) {
+            commands.spawn(( // possible indirection needed
+                SpriteBundle {
+                texture: random_candy(&asset_server),
+                transform: Transform::from_translation(Vec3::new(
+                    x as f32 * 4.5,
+                    (y as f32 * 4.) + 60.,
+                    layers::MARBLES,
+                )),
+                ..default()
+            },
+            RigidBody::Dynamic,
+            Collider::ball(1.7),
+        ))
+        }
+    }
+}
+
 fn random_candy(asset_server: &Res<AssetServer>) -> Handle<Image> {
     let candy_num = rand::thread_rng().gen_range(0..=(NUM_CANDY - 1)); // gen_range is inclusive
     asset_server.load(format!("candy{}.png", candy_num))
