@@ -42,7 +42,7 @@ fn main() {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
-    
+    spawn_ui(commands, asset_server);
 
     //spawn the jar, with a collider
     commands
@@ -70,6 +70,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 
         spawn_candy(1000, &mut commands, &asset_server)
+}
+
+fn spawn_ui(commands: &mut Commands, asset_server: Res<AssetServer>) {
+    
 }
 
 fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetServer>) {
