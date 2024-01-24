@@ -1,3 +1,5 @@
+#![feature(int_roundings)] // enable use of ceiling division unstsable feature
+
 use bevy::{
     prelude::*,
     window::{EnabledButtons, WindowMode, WindowResolution},
@@ -30,7 +32,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
             PhysicsPlugins::default(),
-            // PhysicsDebugPlugin::default(),
+            PhysicsDebugPlugin::default(),
         ))
         .add_systems(Startup, setup)
         .run();
@@ -65,11 +67,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
             children.spawn(Collider::segment((-49., 50.).into(), (-49., -70.).into()));
             children.spawn(Collider::segment((-49., -65.).into(), (0., -72.).into()));
-            children.spawn(Collider::segment((0., -72.).into(), (49., -65.).into()));
-            children.spawn(Collider::segment((49., -70.).into(), (49., 50.).into()));
+            children.spawn(Collider::segment((0., -72.).into(), (50., -65.).into()));
+            children.spawn(Collider::segment((50., -70.).into(), (49., 50.).into()));
         });
 
-        spawn_candy(1000, &mut commands, &asset_server)
+        spawn_candy(50, &mut commands, &asset_server)
 
     // for x in -10..10 {
     //     for y in 0..40 {
@@ -91,10 +93,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetServer>) {
-    for y in 0..((amount / 20) + 1) { // integer division intended
+    for y in 0..(amount / (20) + 1) {
         for x in -10..(
             if y == amount / 20 { // we never get to amount/20+1, amount/20 is the last
-                (amount - (20 % amount)) - 10 // isolate the remainder, and subtract 10 since we start at -10
+                (amount % 20) - 10 // isolate the remainder, and subtract 10 since we start at -10
             } else {
                 10
             }
