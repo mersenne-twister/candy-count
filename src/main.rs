@@ -69,7 +69,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             children.spawn(Collider::segment((49., -70.).into(), (49., 50.).into()));
         });
 
-        spawn_candy(30, &commands, &asset_server)
+        spawn_candy(10, &mut commands, &asset_server)
 
     // for x in -10..10 {
     //     for y in 0..40 {
@@ -90,18 +90,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // }
 }
 
-fn spawn_candy(amount: u32, commands: &Commands, asset_server: &Res<AssetServer>) {
+fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetServer>) {
     for y in 0..((amount / 20) + 1) { // integer division intended
         for x in -10..(
-            if (y == amount / 20) { // we never get to amount/20+1, amount/20 is the last
-                ((amount - (amount % 20)) - 10) // isolate the remainder, and subtract 10 since we start at -10
+            if y == amount / 20 { // we never get to amount/20+1, amount/20 is the last
+                (amount - (amount % 20)) - 10 // isolate the remainder, and subtract 10 since we start at -10
             } else {
                 10
             }
         ) {
             commands.spawn(( // possible indirection needed
                 SpriteBundle {
-                texture: random_candy(&asset_server),
+                texture: random_candy(asset_server),
                 transform: Transform::from_translation(Vec3::new(
                     x as f32 * 4.5,
                     (y as f32 * 4.) + 60.,
@@ -111,7 +111,7 @@ fn spawn_candy(amount: u32, commands: &Commands, asset_server: &Res<AssetServer>
             },
             RigidBody::Dynamic,
             Collider::ball(1.7),
-        ))
+        ));
         }
     }
 }
