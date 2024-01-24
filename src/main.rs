@@ -13,6 +13,7 @@ const NUM_CANDY: u32 = 10;
 
 fn main() {
     App::new()
+    .insert_resource(ClearColor(Color::rgb(0., 0., 0.))) //set background color
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
@@ -32,7 +33,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin::default(),
+            // PhysicsDebugPlugin::default(), // shows hitboxes, etc
         ))
         .add_systems(Startup, setup)
         .run();
@@ -71,29 +72,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             children.spawn(Collider::segment((50., -70.).into(), (49., 50.).into()));
         });
 
-        spawn_candy(50, &mut commands, &asset_server)
-
-    // for x in -10..10 {
-    //     for y in 0..40 {
-    //         commands.spawn((
-    //             SpriteBundle {
-    //                 texture: random_candy(&asset_server),
-    //                 transform: Transform::from_translation(Vec3::new(
-    //                     x as f32 * 4.5,
-    //                     (y as f32 * 4.) + 60.,
-    //                     layers::MARBLES,
-    //                 )),
-    //                 ..default()
-    //             },
-    //             RigidBody::Dynamic,
-    //             Collider::ball(1.7),
-    //         ));
-    //     }
-    // }
+        spawn_candy(1000, &mut commands, &asset_server)
 }
 
 fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetServer>) {
-    for y in 0..(amount / (20) + 1) {
+    for y in 0..(amount / 20 + 1) {
         for x in -10..(
             if y == amount / 20 { // we never get to amount/20+1, amount/20 is the last
                 (amount % 20) - 10 // isolate the remainder, and subtract 10 since we start at -10
@@ -105,8 +88,9 @@ fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetSer
                 SpriteBundle {
                 texture: random_candy(asset_server),
                 transform: Transform::from_translation(Vec3::new(
-                    x as f32 * 4.5,
-                    (y as f32 * 4.) + 60.,
+                    // prevent them  from being perfectly uniform so they fall nicely
+                    x as f32 * 4.5 + if (y % 2) == 0 {1.} else {-1.},
+                    ((y as f32 * 4.) + 60.),
                     layers::MARBLES,
                 )),
                 ..default()
