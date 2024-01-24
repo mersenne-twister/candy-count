@@ -42,6 +42,8 @@ fn main() {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
+    
+
     //spawn the jar, with a collider
     commands
         .spawn((
@@ -85,7 +87,7 @@ fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetSer
                 transform: Transform::from_translation(Vec3::new(
                     // prevent them  from being perfectly uniform so they fall nicely
                     x as f32 * 4.5 + if (y % 2) == 0 {1.} else {-1.},
-                    ((y as f32 * 4.) + 60.),
+                    (y as f32 * 4.) + 60.,
                     layers::MARBLES,
                 )),
                 ..default()
