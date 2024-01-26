@@ -50,7 +50,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             SpriteBundle {
                 texture: asset_server.load("jar-front.png"),
                 transform: Transform {
-                    translation: Vec3::new(0., 5., layers::JAR),
+                    translation: Vec3::new(80., -0., layers::JAR),
                     ..default()
                 },
                 ..default()
@@ -63,10 +63,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 transform: Transform::from_translation((0., 0., -2.).into()),
                 ..default()
             });
-            children.spawn(Collider::segment((-49., 50.).into(), (-49., -70.).into()));
+            children.spawn(Collider::segment((-49., 70.).into(), (-49., -70.).into()));
             children.spawn(Collider::segment((-49., -65.).into(), (0., -72.).into()));
             children.spawn(Collider::segment((0., -72.).into(), (50., -65.).into()));
-            children.spawn(Collider::segment((50., -70.).into(), (49., 50.).into()));
+            children.spawn(Collider::segment((50., -70.).into(), (49., 70.).into()));
         });
 
     spawn_candy(1000, &mut commands, &asset_server)
@@ -74,14 +74,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn spawn_text(commands: &mut Commands, asset_server: &Res<AssetServer>) {
     let style = TextStyle {
-        font_size: 5.,
+        font: asset_server.load("fonts/MerriweatherSans-Regular.ttf"),
+        font_size: 7.,
         color: Color::WHITE,
         ..default()
     };
 
-    commands.spawn(TextBundle::from_sections([
-        TextSection {
-            value: "\
+    commands.spawn(
+        TextBundle::from_sections([
+            TextSection {
+                value: "\
 Hi! Welcome to Candy Count!
 
 A random number of marbles between 500 and
@@ -90,48 +92,56 @@ To Play, Type your guess into the text
 field and press enter.
 
 Your guess: "
-                .to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "".to_string(), // guess
-            style: TextStyle {
-                font_size: 7.,
-                ..default()
+                    .to_string(),
+                style: style.clone(),
             },
-        },
-        TextSection {
-            value: "".to_string(), // if the guess was too high or low
-            style: style.clone(),
-        },
-        TextSection {
-            value: "\n\nThe number is smaller than ".to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "1200".to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "\nThe number is larger than ".to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "500".to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "\nGuesses left: ".to_string(),
-            style: style.clone(),
-        },
-        TextSection {
-            value: "".to_string(),
-            style: TextStyle {
-                font_size: 5.,
-                ..default()
+            TextSection {
+                value: "".to_string(), // guess
+                style: TextStyle {
+                    font: asset_server.load("fonts/Sentient-Bold.ttf"),
+                    font_size: 7.,
+                    ..default()
+                },
             },
-        },
-    ]));
+            TextSection {
+                value: "".to_string(), // if the guess was too high or low
+                style: style.clone(),
+            },
+            TextSection {
+                value: "\n\nThe number is smaller than ".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "1200".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "\nThe number is larger than ".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "500".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "\nGuesses left: ".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "".to_string(),
+                style: TextStyle {
+                    font_size: 7.,
+                    ..default()
+                },
+            },
+        ])
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: Val::Px(20.),
+            left: Val::Px(5.),
+            ..default()
+        }),
+    );
 }
 
 fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetServer>) {
@@ -148,7 +158,7 @@ fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetSer
                     texture: random_candy(asset_server),
                     transform: Transform::from_translation(Vec3::new(
                         // prevent them  from being perfectly uniform so they fall nicely
-                        x as f32 * 4.5 + if (y % 2) == 0 { 1. } else { -1. },
+                        (x as f32 * 4.5 + (if (y % 2) == 0 { 1. } else { -1. })) + 80.,
                         (y as f32 * 4.) + 60.,
                         layers::MARBLES,
                     )),
