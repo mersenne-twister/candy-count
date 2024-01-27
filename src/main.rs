@@ -1,4 +1,4 @@
-#![feature(int_roundings)] // enable use of ceiling division unstsable feature
+#![feature(int_roundings)] // enable use of ceiling division unstable feature
 
 use bevy::{
     prelude::*,
@@ -17,7 +17,8 @@ struct Secret {
 }
 impl Secret {
     fn new() -> Self {
-        Self {
+        Self { // TODO: have one for <1000 and >1000, and use a bournoulli distribution waited torwards
+            // the former to pick which one.
             number: rand::thread_rng().gen_range(Secret::MIN..=Secret::MAX),
         }
     }
@@ -128,14 +129,10 @@ fn input(
         if let Some(num) = input.char.to_digit(10) {
             println!("{}, {}", input.char, guess.guess);
 
-            if guess.guess < (u64::MAX - 5) / 10 {
-                guess.guess = guess.guess * 10 + 5;
+            if guess.guess < (u64::MAX - num as u64) / 10 {
+                guess.guess = guess.guess * 10 + num as u64;
                 guess_text.single_mut().sections[1].value.push(input.char);
             }
-
-            // if (num + secret.number < Secret::MAX) && num + secret.number > Secret::MIN {
-
-            // }
         }
     }
 
@@ -161,8 +158,17 @@ fn guess(
         && (guess.guess > 0)
         && (guess.guess < u32::MAX as u64)
     {
-        // check if won
-        // check if lost
+        if guess.guess as u32 == secret.number {
+            text.single_mut().sections[0].style.font_size = 11.;
+            text.single_mut().sections[0].value = "You won!!\n\n\n".to_string()
+            
+        }
+
+        if guesses.guesses_left == 1 {
+            //really bad way of handling losing
+            text.single_mut().sections[0].style.font_size = 11.;
+            text.single_mut().sections[0].value = "You lost :(\n\n\n".to_string();
+        }
 
         text.single_mut().sections[3].value = if (guess.guess as u32) < secret.number {
             "Your guess was too low!".to_string()
@@ -172,7 +178,7 @@ fn guess(
             text.single_mut().sections[3].value.clone()
         };
 
-        // TODO: REWORK THIS TO STORE THE BLOODY VALUE
+        // TODO: REWORK THIS TO STORE THE ACTUAL BLOODY VALUE
         if ((guess.guess as u32) > secret.number)
             && (guess.guess
                 < text.single_mut().sections[5]
