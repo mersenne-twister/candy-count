@@ -11,6 +11,46 @@ mod layers;
 
 const NUM_CANDY: u32 = 10;
 
+#[derive(Resource)]
+struct Secret {
+    number: u32,
+}
+impl Secret {
+    fn new() -> Self {
+        Self {
+            number: rand::thread_rng().gen_range(Secret::MIN..=Secret::MAX),
+        }
+    }
+    const MAX: u32 = 1200;
+    const MIN: u32 = 500;
+}
+
+#[derive(Resource)]
+struct Guess {
+    guess: u64,
+}
+impl Guess {
+    fn default() -> Self {
+        Self { guess: 0 }
+    }
+}
+
+#[derive(Resource)]
+struct Guesses {
+    guesses_left: u32,
+}
+impl Guesses {
+    fn default() -> Self {
+        Self {
+            guesses_left: Self::MAX_GUESSES,
+        }
+    }
+    const MAX_GUESSES: u32 = 15;
+}
+
+#[derive(Event)]
+struct AttemptGuess;
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.))) //set background color
@@ -19,7 +59,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Candy Count".into(),
-                        resolution: WindowResolution::new(3840., 2160.)
+                        resolution: WindowResolution::new(1920., 1080.)
                             .with_scale_factor_override(12.),
                         mode: WindowMode::BorderlessFullscreen,
                         resizable: false,
@@ -36,10 +76,15 @@ fn main() {
             // PhysicsDebugPlugin::default(), // shows hitboxes, etc
         ))
         .add_systems(Startup, setup)
+        .insert_resource(Secret::new())
+        .insert_resource(Guess::default())
+        .insert_resource(Guesses::default())
+        .add_event::<AttemptGuess>()
+        .add_systems(Update, (input, guess, last_guess))
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, secret: Res<Secret>) {
     commands.spawn(Camera2dBundle::default());
 
     spawn_text(&mut commands, &asset_server);
@@ -48,7 +93,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             SpriteBundle {
-                texture: asset_server.load("jar-front.png"),
+                texture: asset_server.load("sprites/jar-front.png"),
                 transform: Transform {
                     translation: Vec3::new(80., -0., layers::JAR),
                     ..default()
@@ -59,7 +104,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         ))
         .with_children(|children| {
             children.spawn(SpriteBundle {
-                texture: asset_server.load("jar-back.png"),
+                texture: asset_server.load("sprites/jar-back.png"),
                 transform: Transform::from_translation((0., 0., -2.).into()),
                 ..default()
             });
@@ -69,7 +114,86 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             children.spawn(Collider::segment((50., -70.).into(), (49., 70.).into()));
         });
 
-    spawn_candy(1000, &mut commands, &asset_server)
+    spawn_candy(secret.number as i32, &mut commands, &asset_server)
+}
+
+fn input(
+    mut text_inputs: EventReader<ReceivedCharacter>,
+    key_input: Res<Input<KeyCode>>,
+    mut guess: ResMut<Guess>,
+    mut guess_text: Query<&mut Text>,
+    mut attempt_guess_writer: EventWriter<AttemptGuess>,
+) {
+    for input in text_inputs.read() {
+        if let Some(num) = input.char.to_digit(10) {
+            println!("{}, {}", input.char, guess.guess);
+
+            if guess.guess < (u64::MAX - 5) / 10 {
+                guess.guess = guess.guess * 10 + 5;
+                guess_text.single_mut().sections[1].value.push(input.char);
+            }
+
+            // if (num + secret.number < Secret::MAX) && num + secret.number > Secret::MIN {
+
+            // }
+        }
+    }
+
+    if key_input.just_pressed(KeyCode::Return) {
+        attempt_guess_writer.send(AttemptGuess);
+        // guess_text.single_mut().sections[1].value.clear();
+    }
+
+    if key_input.just_pressed(KeyCode::Back) {
+        guess.guess /= 10;
+        guess_text.single_mut().sections[1].value.pop();
+    }
+}
+
+fn guess(
+    mut guess: ResMut<Guess>,
+    mut attempt_guess_reader: EventReader<AttemptGuess>,
+    mut text: Query<&mut Text>,
+    mut guesses: ResMut<Guesses>,
+    secret: Res<Secret>,
+) {
+    if attempt_guess_reader.read().next().is_some()
+        && (guess.guess > 0)
+        && (guess.guess < u32::MAX as u64)
+    {
+        // check if won
+        // check if lost
+
+        if ((guess.guess as u32) < secret.number)
+            && (guess.guess
+                < text.single_mut().sections[5]
+                    .value
+                    .parse()
+                    .expect("Should only contain a number"))
+        {
+            text.single_mut().sections[5].value = guess.guess.to_string();
+        } else if ((guess.guess as u32) > secret.number)
+            && (guess.guess
+                > text.single_mut().sections[7]
+                    .value
+                    .parse()
+                    .expect("Should only contain a number"))
+        {
+            text.single_mut().sections[7].value = guess.guess.to_string();
+        }
+
+        guesses.guesses_left -= 1;
+        text.single_mut().sections[9].value = guesses.guesses_left.to_string();
+
+        text.single_mut().sections[1].value.clear();
+        guess.guess = 0;
+    }
+}
+
+fn last_guess(guesses: Res<Guesses>, mut text: Query<&mut Text>) {
+    if guesses.guesses_left == 1 {
+        text.single_mut().sections[11].value = "1 guess left!".to_string();
+    }
 }
 
 fn spawn_text(commands: &mut Commands, asset_server: &Res<AssetServer>) {
@@ -86,10 +210,12 @@ fn spawn_text(commands: &mut Commands, asset_server: &Res<AssetServer>) {
                 value: "\
 Hi! Welcome to Candy Count!
 
-A random number of marbles between 500 and
-1200 and just been dropped into the jar.
+A random number of marbles between 500
+and 1200 has just been dropped into the
+jar.
 To Play, Type your guess into the text
 field and press enter.
+Press backspace to delete the last typed digit.
 
 Your guess: "
                     .to_string(),
@@ -104,6 +230,10 @@ Your guess: "
                 },
             },
             TextSection {
+                value: "\n".to_string(), // newline between guess and high/low message
+                style: style.clone(),
+            },
+            TextSection {
                 value: "".to_string(), // if the guess was too high or low
                 style: style.clone(),
             },
@@ -116,7 +246,7 @@ Your guess: "
                 style: style.clone(),
             },
             TextSection {
-                value: "\nThe number is larger than ".to_string(),
+                value: "\n\nThe number is larger than ".to_string(),
                 style: style.clone(),
             },
             TextSection {
@@ -128,10 +258,22 @@ Your guess: "
                 style: style.clone(),
             },
             TextSection {
-                value: "".to_string(),
+                value: Guesses::MAX_GUESSES.to_string(),
                 style: TextStyle {
                     font_size: 7.,
                     ..default()
+                },
+            },
+            TextSection {
+                value: "\n".to_string(), // separator
+                style: style.clone(),
+            },
+            TextSection {
+                value: "".to_string(), // will show "1 guess left!"
+                style: TextStyle {
+                    font: asset_server.load("font/MerriweatherSans-ExtraBoldItalic.ttf"),
+                    font_size: 7.,
+                    color: Color::RED,
                 },
             },
         ])
@@ -173,5 +315,5 @@ fn spawn_candy(amount: i32, commands: &mut Commands, asset_server: &Res<AssetSer
 
 fn random_candy(asset_server: &Res<AssetServer>) -> Handle<Image> {
     let candy_num = rand::thread_rng().gen_range(0..=(NUM_CANDY - 1)); // gen_range is inclusive
-    asset_server.load(format!("candy{}.png", candy_num))
+    asset_server.load(format!("sprites/candy{}.png", candy_num))
 }
