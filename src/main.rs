@@ -164,7 +164,16 @@ fn guess(
         // check if won
         // check if lost
 
-        if ((guess.guess as u32) < secret.number)
+        text.single_mut().sections[3].value = if (guess.guess as u32) < secret.number {
+            "Your guess was too low!".to_string()
+        } else if (guess.guess as u32) > secret.number {
+            "Your guess was too high!".to_string()
+        } else {
+            text.single_mut().sections[3].value.clone()
+        };
+
+        // TODO: REWORK THIS TO STORE THE BLOODY VALUE
+        if ((guess.guess as u32) > secret.number)
             && (guess.guess
                 < text.single_mut().sections[5]
                     .value
@@ -172,7 +181,14 @@ fn guess(
                     .expect("Should only contain a number"))
         {
             text.single_mut().sections[5].value = guess.guess.to_string();
-        } else if ((guess.guess as u32) > secret.number)
+            println!(
+                "parsed num: {}",
+                text.single_mut().sections[5]
+                    .value
+                    .parse::<u64>()
+                    .expect("Should only contain a number")
+            );
+        } else if ((guess.guess as u32) < secret.number)
             && (guess.guess
                 > text.single_mut().sections[7]
                     .value
@@ -180,6 +196,13 @@ fn guess(
                     .expect("Should only contain a number"))
         {
             text.single_mut().sections[7].value = guess.guess.to_string();
+            println!(
+                "parsed num: {}",
+                text.single_mut().sections[7]
+                    .value
+                    .parse::<u64>()
+                    .expect("Should only contain a number")
+            );
         }
 
         guesses.guesses_left -= 1;
@@ -246,7 +269,7 @@ Your guess: "
                 style: style.clone(),
             },
             TextSection {
-                value: "\n\nThe number is larger than ".to_string(),
+                value: "\nThe number is larger than ".to_string(),
                 style: style.clone(),
             },
             TextSection {
@@ -265,13 +288,13 @@ Your guess: "
                 },
             },
             TextSection {
-                value: "\n".to_string(), // separator
+                value: "\n\n".to_string(), // separator
                 style: style.clone(),
             },
             TextSection {
                 value: "".to_string(), // will show "1 guess left!"
                 style: TextStyle {
-                    font: asset_server.load("font/MerriweatherSans-ExtraBoldItalic.ttf"),
+                    font: asset_server.load("fonts/MerriweatherSans-ExtraBoldItalic.ttf"),
                     font_size: 7.,
                     color: Color::RED,
                 },
