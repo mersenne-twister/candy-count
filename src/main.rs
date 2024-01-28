@@ -53,7 +53,7 @@ impl Guesses {
 struct AttemptGuess;
 
 fn main() {
-    App::new()
+    App::new() // setup window
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.))) //set background color
         .add_plugins((
             DefaultPlugins
@@ -153,6 +153,8 @@ fn guess(
     mut text: Query<&mut Text>,
     mut guesses: ResMut<Guesses>,
     secret: Res<Secret>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
 ) {
     if attempt_guess_reader.read().next().is_some()
         && (guess.guess > 0)
@@ -160,7 +162,11 @@ fn guess(
     {
         if guess.guess as u32 == secret.number {
             text.single_mut().sections[0].style.font_size = 11.;
-            text.single_mut().sections[0].value = "You won!!\n\n\n".to_string()
+            text.single_mut().sections[0].value = "You won!!\n\n\n".to_string();
+            commands.spawn(AudioBundle {
+                source: asset_server.load("audio/sfx/win.wav"),
+                ..default()
+            });
             
         }
 
@@ -168,6 +174,10 @@ fn guess(
             //really bad way of handling losing
             text.single_mut().sections[0].style.font_size = 11.;
             text.single_mut().sections[0].value = "You lost :(\n\n\n".to_string();
+            commands.spawn(AudioBundle {
+                source: asset_server.load("audio/sfx/lose.wav"),
+                ..default()
+            });
         }
 
         text.single_mut().sections[3].value = if (guess.guess as u32) < secret.number {
