@@ -240,7 +240,6 @@ fn spawn_text(commands: &mut Commands, asset_server: &Res<AssetServer>) {
         font: asset_server.load("fonts/MerriweatherSans-Regular.ttf"),
         font_size: 7.,
         color: Color::WHITE,
-        ..default()
     };
 
     commands.spawn(
