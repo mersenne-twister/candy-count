@@ -3,6 +3,7 @@
 use bevy::{
     prelude::*,
     window::{EnabledButtons, WindowMode, WindowResolution},
+    render::color::Color,
 };
 use bevy_xpbd_2d::prelude::*;
 use rand::Rng;
@@ -22,8 +23,8 @@ impl Secret {
             number: rand::thread_rng().gen_range(Secret::MIN..=Secret::MAX),
         }
     }
-    const MAX: u32 = 1200;
-    const MIN: u32 = 500;
+    const MAX: u32 = 1000;
+    const MIN: u32 = 300;
 }
 
 #[derive(Resource)]
@@ -35,6 +36,12 @@ impl Guess {
         Self { guess: 0 }
     }
 }
+
+#[derive(Component)]
+struct ThumbsUp;
+
+#[derive(Component)]
+struct SadFace;
 
 #[derive(Resource)]
 struct Guesses {
@@ -76,12 +83,15 @@ fn main() {
             PhysicsPlugins::default(),
             // PhysicsDebugPlugin::default(), // shows hitboxes, etc
         ))
+        .insert_resource(Gravity(Vec2::NEG_Y * 25.))
+        .insert_resource(Time::<Fixed>::from_seconds(0.017))
         .add_systems(Startup, setup)
         .insert_resource(Secret::new())
         .insert_resource(Guess::default())
         .insert_resource(Guesses::default())
         .add_event::<AttemptGuess>()
         .add_systems(Update, (input, guess, last_guess))
+        .add_systems(FixedUpdate, (move_thumb, fade_face))
         .run();
 }
 
@@ -147,6 +157,23 @@ fn input(
     }
 }
 
+fn move_thumb(mut query: Query<&mut Transform, With<ThumbsUp>>) {
+    if let Ok(mut thumb) = query.get_single_mut() {
+        if thumb.translation.x < 160. {
+            thumb.translation.x += 0.2;
+        }
+    }
+}
+
+fn fade_face(mut query: Query<&mut Sprite, With<SadFace>>) {
+    if let Ok(mut face) = query.get_single_mut() {
+        let alpha = face.color.a();
+        if alpha < 1. {
+            face.color.set_a(alpha + 0.005);
+        }
+    }
+}
+
 fn guess(
     mut guess: ResMut<Guess>,
     mut attempt_guess_reader: EventReader<AttemptGuess>,
@@ -161,19 +188,57 @@ fn guess(
         && (guess.guess < u32::MAX as u64)
     {
         if guess.guess as u32 == secret.number {
-            text.single_mut().sections[0].style.font_size = 11.;
-            text.single_mut().sections[0].value = "You won!!\n\n\n".to_string();
+            for section in &mut text.single_mut().sections {
+                section.style.color = Color::NONE;
+            }
+
+            commands.spawn(TextBundle {
+                text: Text::from_section("You Won!".to_string(), TextStyle {
+                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
+                    font_size: 10.,
+                    color: Color::WHITE,
+                }),
+                transform: Transform::from_translation((0., -70., layers::END_TEXT).into()),
+                ..default()
+            });
+
+            commands.spawn(SpriteBundle {
+                texture: asset_server.load("sprites/thumbs-up.png"),
+                transform: Transform::from_translation((-430., 0., layers::END_SPRITE).into()),
+                ..default()
+            }).insert(ThumbsUp);
+
             commands.spawn(AudioBundle {
                 source: asset_server.load("audio/sfx/win.wav"),
                 ..default()
             });
-            
         }
 
         if guesses.guesses_left == 1 {
             //really bad way of handling losing
-            text.single_mut().sections[0].style.font_size = 11.;
-            text.single_mut().sections[0].value = "You lost :(\n\n\n".to_string();
+            for section in &mut text.single_mut().sections {
+                section.style.color = Color::NONE;
+            }
+
+            commands.spawn(TextBundle {
+                text: Text::from_section("You Lost :(".to_string(), TextStyle {
+                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
+                    font_size: 15.,
+                    color: Color::WHITE,
+                }),
+                ..default()
+            });
+
+            commands.spawn(SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgba(1., 1., 1., 0.),
+                    ..default()
+                },
+                texture: asset_server.load("sprites/sad-face.png"),
+                transform: Transform::from_translation((0., 0., layers::END_SPRITE).into()),
+                ..default()
+            }).insert(SadFace);
+
             commands.spawn(AudioBundle {
                 source: asset_server.load("audio/sfx/lose.wav"),
                 ..default()
@@ -248,8 +313,8 @@ fn spawn_text(commands: &mut Commands, asset_server: &Res<AssetServer>) {
                 value: "\
 Hi! Welcome to Candy Count!
 
-A random number of marbles between 500
-and 1200 has just been dropped into the
+A random number of marbles between 300
+and 1000 has just been dropped into the
 jar.
 To Play, Type your guess into the text
 field and press enter.
@@ -280,7 +345,7 @@ Your guess: "
                 style: style.clone(),
             },
             TextSection {
-                value: "1200".to_string(),
+                value: "1000".to_string(),
                 style: style.clone(),
             },
             TextSection {
@@ -288,7 +353,7 @@ Your guess: "
                 style: style.clone(),
             },
             TextSection {
-                value: "500".to_string(),
+                value: "300".to_string(),
                 style: style.clone(),
             },
             TextSection {
