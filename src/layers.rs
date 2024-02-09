@@ -5,3 +5,5 @@ pub const MARBLES: f32 = 4.;
 pub const END_SPRITE: f32 = 6.;
 
 pub const END_TEXT: f32 = 7.;
+
+pub const BACKGROUND: f32 = 0.;
