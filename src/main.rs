@@ -2,10 +2,11 @@
 
 use bevy::{
     prelude::*,
-    window::{EnabledButtons, WindowMode, WindowResolution},
     render::color::Color,
+    window::{EnabledButtons, WindowMode, WindowResolution},
 };
 use bevy_xpbd_2d::prelude::*;
+use layers::BACKGROUND;
 use rand::Rng;
 
 mod layers;
@@ -18,7 +19,8 @@ struct Secret {
 }
 impl Secret {
     fn new() -> Self {
-        Self { // TODO: have one for <1000 and >1000, and use a bournoulli distribution waited torwards
+        Self {
+            // TODO: have one for <1000 and >1000, and use a bournoulli distribution waited torwards
             // the former to pick which one.
             number: rand::thread_rng().gen_range(Secret::MIN..=Secret::MAX),
         }
@@ -60,7 +62,9 @@ impl Guesses {
 struct AttemptGuess;
 
 fn main() {
-    App::new() // setup window
+    let mut app = App::new();
+    
+    app // setup window
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.))) //set background color
         .add_plugins((
             DefaultPlugins
@@ -91,14 +95,37 @@ fn main() {
         .insert_resource(Guesses::default())
         .add_event::<AttemptGuess>()
         .add_systems(Update, (input, guess, last_guess))
-        .add_systems(FixedUpdate, (move_thumb, fade_face))
-        .run();
+        .add_systems(FixedUpdate, (move_thumb, fade_face));
+
+    #[cfg(target_family = "wasm")]
+    app.add_systems(Update, update_canvas_size);
+
+    app.run();
+}
+
+/// run full screen in browser
+#[cfg(target_family = "wasm")]
+fn update_canvas_size(mut window: Query<&mut Window, With<PrimaryWindow>>) {
+    (|| {
+        let mut window = window.get_single_mut().ok()?;
+        let browser_window = web_sys::window()?;
+        let width = browser_window.inner_width().ok()?.as_f64()?;
+        let height = browser_window.inner_height().ok()?.as_f64()?;
+        window.resolution.set(width as f32, height as f32);
+        Some(())
+    })();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, secret: Res<Secret>) {
     commands.spawn(Camera2dBundle::default());
 
     spawn_text(&mut commands, &asset_server);
+
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load("sprites/background.png"),
+        transform: Transform::from_translation((0., 0., layers::BACKGROUND).into()),
+        ..default()
+    });
 
     //spawn the jar, with a collider
     commands
@@ -181,7 +208,7 @@ fn guess(
     mut guesses: ResMut<Guesses>,
     secret: Res<Secret>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>
+    asset_server: Res<AssetServer>,
 ) {
     if attempt_guess_reader.read().next().is_some()
         && (guess.guess > 0)
@@ -193,20 +220,25 @@ fn guess(
             }
 
             commands.spawn(TextBundle {
-                text: Text::from_section("You Won!".to_string(), TextStyle {
-                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
-                    font_size: 10.,
-                    color: Color::WHITE,
-                }),
+                text: Text::from_section(
+                    "You Won!".to_string(),
+                    TextStyle {
+                        font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
+                        font_size: 10.,
+                        color: Color::WHITE,
+                    },
+                ),
                 transform: Transform::from_translation((0., -70., layers::END_TEXT).into()),
                 ..default()
             });
 
-            commands.spawn(SpriteBundle {
-                texture: asset_server.load("sprites/thumbs-up.png"),
-                transform: Transform::from_translation((-430., 0., layers::END_SPRITE).into()),
-                ..default()
-            }).insert(ThumbsUp);
+            commands
+                .spawn(SpriteBundle {
+                    texture: asset_server.load("sprites/thumbs-up.png"),
+                    transform: Transform::from_translation((-430., 0., layers::END_SPRITE).into()),
+                    ..default()
+                })
+                .insert(ThumbsUp);
 
             commands.spawn(AudioBundle {
                 source: asset_server.load("audio/sfx/win.wav"),
@@ -221,23 +253,28 @@ fn guess(
             }
 
             commands.spawn(TextBundle {
-                text: Text::from_section("You Lost :(".to_string(), TextStyle {
-                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
-                    font_size: 15.,
-                    color: Color::WHITE,
-                }),
+                text: Text::from_section(
+                    "You Lost :(".to_string(),
+                    TextStyle {
+                        font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
+                        font_size: 15.,
+                        color: Color::WHITE,
+                    },
+                ),
                 ..default()
             });
 
-            commands.spawn(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgba(1., 1., 1., 0.),
+            commands
+                .spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgba(1., 1., 1., 0.),
+                        ..default()
+                    },
+                    texture: asset_server.load("sprites/sad-face.png"),
+                    transform: Transform::from_translation((0., 0., layers::END_SPRITE).into()),
                     ..default()
-                },
-                texture: asset_server.load("sprites/sad-face.png"),
-                transform: Transform::from_translation((0., 0., layers::END_SPRITE).into()),
-                ..default()
-            }).insert(SadFace);
+                })
+                .insert(SadFace);
 
             commands.spawn(AudioBundle {
                 source: asset_server.load("audio/sfx/lose.wav"),
