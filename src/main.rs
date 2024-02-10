@@ -291,7 +291,7 @@ fn guess(
 
             commands.spawn(TextBundle {
                 text: Text::from_section(
-                    "You Lost :(".to_string(),
+                    format!("You Lost :(\nThe secret number was {}", secret.number),
                     TextStyle {
                         font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
                         font_size: 15.,
