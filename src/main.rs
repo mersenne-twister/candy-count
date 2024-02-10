@@ -61,7 +61,7 @@ impl Guesses {
             guesses_left: Self::MAX_GUESSES,
         }
     }
-    const MAX_GUESSES: u32 = 15;
+    const MAX_GUESSES: u32 = 8;
 }
 
 #[derive(Event)]
