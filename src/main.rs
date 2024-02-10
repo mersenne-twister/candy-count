@@ -1,13 +1,19 @@
 #![feature(int_roundings)] // enable use of ceiling division unstable feature
 
-use bevy::{
-    prelude::*,
-    render::color::Color,
-    window::{EnabledButtons, WindowMode, WindowResolution},
+// global imports
+use {
+    bevy::{
+        prelude::*,
+        render::color::Color,
+        window::{EnabledButtons, PrimaryWindow, WindowMode, WindowResolution},
+    },
+    bevy_xpbd_2d::prelude::*,
+    rand::Rng,
 };
-use bevy_xpbd_2d::prelude::*;
-use layers::BACKGROUND;
-use rand::Rng;
+
+// wasm imports
+#[cfg(target_family = "wasm")]
+use web_sys::window;
 
 mod layers;
 
@@ -63,7 +69,7 @@ struct AttemptGuess;
 
 fn main() {
     let mut app = App::new();
-    
+
     app // setup window
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.))) //set background color
         .add_plugins((
@@ -71,8 +77,8 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Candy Count".into(),
-                        resolution: WindowResolution::new(3860., 2160.)
-                            .with_scale_factor_override(12.),
+                        // resolution: WindowResolution::new(3860., 2160.)
+                        //     .with_scale_factor_override(12.),
                         mode: WindowMode::BorderlessFullscreen,
                         resizable: false,
                         enabled_buttons: EnabledButtons {
@@ -97,13 +103,42 @@ fn main() {
         .add_systems(Update, (input, guess, last_guess))
         .add_systems(FixedUpdate, (move_thumb, fade_face));
 
-    #[cfg(target_family = "wasm")]
-    app.add_systems(Update, update_canvas_size);
+    // #[cfg(not(target_family = "wasm"))]
+    // app.add_systems(Startup, set_scale);
+
+    // #[cfg(target_family = "wasm")]
+    // app.add_systems(Update, update_canvas_size);
 
     app.run();
 }
 
-/// run full screen in browser
+/// a bad attempt at setting the resolution that just causes an arbitrary crash
+#[cfg(not(target_family = "wasm"))]
+fn set_scale(mut window: Query<&mut Window, With<PrimaryWindow>>) {
+    let mut window = window.get_single_mut().unwrap();
+
+    println!("window dims: {}, {}", window.physical_width(), window.physical_height());
+
+    // let width_ratio = window.physical_width() as f64 / 320.;
+    // let height_ratio = window.physical_height() as f64 / 180.;
+
+    // let scale_factor_override = f64::min(width_ratio, height_ratio);
+
+    let scale_factor_override = window.physical_width() as f64 / 320.;
+
+    println!("scat-fact: {}", scale_factor_override);
+
+    // window.resolution.set_scale_factor(scale_factor_override);
+    window.resolution.set_scale_factor_override(Some(scale_factor_override));
+    // causes crash:
+    //     wgpu error: Validation Error
+    // Caused by:
+    //     In Device::create_texture
+    //       note: label = `main_texture_sampled`
+    //     Not enough memory left
+}
+
+/// attempt to run full screen in browser, instead screw up aspect ratio and cause insane lag
 #[cfg(target_family = "wasm")]
 fn update_canvas_size(mut window: Query<&mut Window, With<PrimaryWindow>>) {
     (|| {
@@ -111,7 +146,9 @@ fn update_canvas_size(mut window: Query<&mut Window, With<PrimaryWindow>>) {
         let browser_window = web_sys::window()?;
         let width = browser_window.inner_width().ok()?.as_f64()?;
         let height = browser_window.inner_height().ok()?.as_f64()?;
-        window.resolution.set(width as f32, height as f32);
+        window
+            .resolution
+            .set(width as f32, height as f32);
         Some(())
     })();
 }
