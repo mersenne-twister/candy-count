@@ -77,8 +77,8 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Candy Count".into(),
-                        // resolution: WindowResolution::new(3860., 2160.)
-                        //     .with_scale_factor_override(12.),
+                        resolution: WindowResolution::new(3860., 2160.)
+                            .with_scale_factor_override(12.),
                         mode: WindowMode::BorderlessFullscreen,
                         resizable: false,
                         enabled_buttons: EnabledButtons {
