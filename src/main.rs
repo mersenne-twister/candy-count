@@ -61,7 +61,7 @@ impl Guesses {
             guesses_left: Self::MAX_GUESSES,
         }
     }
-    const MAX_GUESSES: u32 = 8;
+    const MAX_GUESSES: u32 = 10;
 }
 
 #[derive(Event)]
@@ -261,7 +261,7 @@ fn guess(
                     "You Won!".to_string(),
                     TextStyle {
                         font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
-                        font_size: 10.,
+                        font_size: 15.,
                         color: Color::WHITE,
                     },
                 ),
@@ -283,7 +283,7 @@ fn guess(
             });
         }
 
-        if guesses.guesses_left == 1 {
+        if guesses.guesses_left == 1 && !(guess.guess as u32 == secret.number) {
             //really bad way of handling losing
             for section in &mut text.single_mut().sections {
                 section.style.color = Color::NONE;
